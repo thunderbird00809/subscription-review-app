@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>サブスク管理アプリ 統合設計</title>
+  <style>
+    :root {
+      font-family: Inter, "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+      color: #171417;
+      background: #f4efe6;
+      --ink: #252127;
+      --paper: #f8f3ea;
+      --soft: #efe7da;
+      --line: #d8cfc0;
+      --muted: #70685d;
+      --rust: #9a7158;
+      --sage: #607a73;
+      --gold: #c5a464;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(130deg, rgba(154, 113, 88, 0.12), transparent 36%),
+        linear-gradient(310deg, rgba(96, 122, 115, 0.16), transparent 42%),
+        #f4efe6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      width: min(1220px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: end;
+      padding-bottom: 28px;
+      border-bottom: 1px solid rgba(37, 33, 39, 0.16);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 780px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(38px, 5vw, 68px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .meta-card {
+      min-width: 240px;
+      padding: 18px;
+      color: var(--paper);
+      background: var(--ink);
+      border-radius: 8px;
+    }
+
+    .meta-card span {
+      display: block;
+      color: rgba(248, 243, 234, 0.62);
+      font-size: 11px;
+    }
+
+    .meta-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 18px;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 12px 0;
+      margin-bottom: 20px;
+      background: rgba(244, 239, 230, 0.88);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav a,
+    .jump {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 12px;
+      background: rgba(248, 243, 234, 0.72);
+      color: #50483f;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .nav a:hover,
+    .jump:hover {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--paper);
+    }
+
+    .section {
+      margin-top: 34px;
+      scroll-margin-top: 72px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .diagram-card,
+    .table-wrap,
+    .rule-card,
+    .phone-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 243, 234, 0.82);
+    }
+
+    .diagram-card {
+      overflow-x: auto;
+      padding: 20px;
+    }
+
+    .mermaid {
+      min-width: 980px;
+    }
+
+    .mermaid .edgeLabel,
+    .mermaid .edgeLabel p,
+    .mermaid .edgeLabel span {
+      color: #171417 !important;
+      background: #fffaf0 !important;
+    }
+
+    .mermaid .edgeLabel {
+      border: 1px solid rgba(154, 113, 88, 0.46);
+      border-radius: 6px;
+      padding: 3px 6px;
+      box-shadow: 0 2px 8px rgba(37, 33, 39, 0.12);
+    }
+
+    .mermaid .edgeLabel .labelBkg,
+    .mermaid .labelBkg {
+      fill: #fffaf0 !important;
+      stroke: #9a7158 !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+
+    .id-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .id-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 243, 234, 0.76);
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .id-chip strong {
+      color: var(--rust);
+      margin-right: 6px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1040px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    th {
+      color: var(--paper);
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    th:first-child {
+      border-top-left-radius: 8px;
+    }
+
+    th:last-child {
+      border-top-right-radius: 8px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td:first-child {
+      width: 76px;
+      color: var(--rust);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .screen-name {
+      font-weight: 780;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      border-radius: 999px;
+      padding: 0 8px;
+      margin: 2px 4px 2px 0;
+      background: #ebe2d4;
+      color: #50483f;
+      font-size: 10px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .tag.dark {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .rules {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .rule-card {
+      min-height: 134px;
+      padding: 16px;
+    }
+
+    .rule-card h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .rule-card p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .formula {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 7px 9px;
+      border-radius: 6px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 11px;
+      font-weight: 720;
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .phone-panel {
+      padding: 14px;
+      scroll-margin-top: 80px;
+    }
+
+    .mock-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 58px;
+      margin-bottom: 12px;
+    }
+
+    .mock-head h3 {
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .mock-head p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 256px;
+      aspect-ratio: 390 / 844;
+      margin: 0 auto;
+      border-radius: 28px;
+      padding: 8px;
+      background: #221f24;
+      box-shadow: 0 18px 34px rgba(37, 33, 39, 0.18);
+    }
+
+    .screen {
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-radius: 21px;
+      padding: 16px 14px 13px;
+      background: #f7f3ea;
+      color: #161417;
+    }
+
+    .status,
+    .row,
+    .topline,
+    .bottom-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .status {
+      margin-bottom: 14px;
+      font-size: 9px;
+      font-weight: 800;
+      opacity: 0.74;
+    }
+
+    .signal {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .dot,
+    .bar {
+      width: 5px;
+      height: 5px;
+      display: block;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .bar {
+      width: 13px;
+      height: 7px;
+    }
+
+    .screen-title {
+      font-size: 12px;
+      font-weight: 760;
+      opacity: 0.72;
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #f0e9dc;
+      font-size: 14px;
+      font-weight: 780;
+    }
+
+    .hero-number {
+      margin-top: 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 40px;
+      line-height: 0.96;
+      font-weight: 700;
+    }
+
+    .caption,
+    .small {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .caption {
+      margin-top: 8px;
+    }
+
+    .insight {
+      margin-top: 14px;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .insight strong,
+    .section-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .section-label {
+      margin: 13px 0 8px;
+    }
+
+    .list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 7px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 39px;
+      border-bottom: 1px solid #ded5c7;
+      padding-bottom: 6px;
+    }
+
+    .marker {
+      width: 7px;
+      height: 26px;
+      border-radius: 6px;
+      background: var(--ink);
+    }
+
+    .marker.rust {
+      background: var(--rust);
+    }
+
+    .marker.sage {
+      background: var(--sage);
+    }
+
+    .name,
+    .price {
+      font-size: 11px;
+      font-weight: 780;
+    }
+
+    .price {
+      text-align: right;
+    }
+
+    .search {
+      height: 36px;
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eee7da;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .service {
+      min-height: 56px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #efe7da;
+      color: #5d574e;
+      font-size: 8px;
+      font-weight: 720;
+    }
+
+    .service.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--paper);
+    }
+
+    .brand {
+      width: 25px;
+      height: 25px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .red {
+      background: #d61728;
+    }
+
+    .green {
+      background: #1db954;
+      color: #101310;
+    }
+
+    .blue {
+      background: #2775d1;
+    }
+
+    .pink {
+      background: #d34878;
+    }
+
+    .plan,
+    .summary-card,
+    .edit-card,
+    .setting-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbf6eb;
+    }
+
+    .plan {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      min-height: 50px;
+      padding: 9px;
+      align-items: center;
+    }
+
+    .plan.active {
+      box-shadow: inset 0 0 0 1px var(--ink);
+      border-color: var(--ink);
+    }
+
+    .monthly {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .summary-card,
+    .edit-card {
+      margin-top: 10px;
+      padding: 11px;
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .summary-card .row,
+    .edit-card .row {
+      padding: 7px 0;
+      border-top: 1px solid rgba(248, 243, 234, 0.14);
+    }
+
+    .summary-card .row:first-child,
+    .edit-card .row:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .summary-card span,
+    .edit-card span {
+      color: rgba(248, 243, 234, 0.62);
+      font-size: 9px;
+    }
+
+    .summary-card strong,
+    .edit-card strong {
+      font-size: 11px;
+    }
+
+    .field-comment {
+      margin: -2px 0 5px;
+      color: rgba(248, 243, 234, 0.58);
+      font-size: 9px;
+      line-height: 1.45;
+    }
+
+    .input-like {
+      min-width: 76px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #c5a464;
+      border-radius: 6px;
+      background: #fffaf0;
+      color: #171417;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(37, 33, 39, 0.08);
+    }
+
+    .primary {
+      height: 36px;
+      display: grid;
+      place-items: center;
+      margin-top: auto;
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .bottom-nav {
+      min-height: 38px;
+      margin-top: auto;
+      padding: 0 11px;
+      border-radius: 15px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 8px;
+    }
+
+    .chart {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      align-items: end;
+      height: 94px;
+      margin-top: 16px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chart span {
+      display: block;
+      border-radius: 6px 6px 0 0;
+      background: var(--ink);
+    }
+
+    .chart span:nth-child(2) {
+      height: 72px;
+      background: var(--rust);
+    }
+
+    .chart span:nth-child(1) {
+      height: 52px;
+      background: var(--sage);
+    }
+
+    .chart span:nth-child(3) {
+      height: 86px;
+    }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 46px;
+      padding: 9px;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .task-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 243, 234, 0.82);
+      padding: 16px;
+    }
+
+    .task-card h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .task-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .command {
+      display: block;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 1120px) {
+      .mock-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .rules,
+      .task-grid,
+      .id-map {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        width: min(100vw - 24px, 680px);
+        padding-top: 24px;
+      }
+
+      .hero,
+      .mock-grid,
+      .rules,
+      .task-grid,
+      .id-map {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      .section-head {
+        align-items: start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero" id="top">
+      <div>
+        <h1>サブスク管理アプリ 統合設計</h1>
+        <p class="lead">状態遷移図、画面遷移表、表示ルール、主要画面モックを1ページに集約。プラン選択後の金額編集はS03内にまとめ、画面遷移を減らしています。</p>
+      </div>
+      <aside class="meta-card">
+        <span>Design Direction</span>
+        <strong>Cost Editorial</strong>
+        <span style="margin-top:14px">Core Rule</span>
+        <strong>価格は手修正可能</strong>
+      </aside>
+    </header>
+
+    <nav class="nav" aria-label="ページ内ナビゲーション">
+      <a href="#diagram">状態遷移図</a>
+      <a href="#table">画面遷移表</a>
+      <a href="#rules">表示ルール</a>
+      <a href="#mockups">画面モック</a>
+      <a href="#implementation">実装前タスク</a>
+      <a href="#s01">S01</a>
+      <a href="#s02">S02</a>
+      <a href="#s03">S03</a>
+      <a href="#s05">S05</a>
+      <a href="#s07">S07</a>
+      <a href="#s08">S08</a>
+    </nav>
+
+    <section class="section" id="diagram">
+      <div class="section-head">
+        <h2>状態遷移図</h2>
+        <p class="note">ノードには画面IDを併記。図下の画面IDからモックへ移動できます。</p>
+      </div>
+      <div class="diagram-card">
+        <pre class="mermaid">
+stateDiagram-v2
+    Home: S01 ホーム / Cost Review
+    CostReview: S07 レビュー
+    ServiceSelecting: S02 サービス選択
+    ServiceSearching: S02 サービス検索中
+    PlanSelecting: S03 プラン選択
+    ManualEditing: S03 手動入力
+    InlinePlanEditor: S03 金額編集欄を表示
+    BillingDateEditing: S03 次回請求日入力
+    InlinePriceEditing: S03 金額を手修正
+    Saved: 保存完了
+    SubscriptionDetail: S05 サブスク詳細
+    UserPriceOverridden: S05 手修正価格保存
+    CatalogPriceChanged: S05 カタログ価格差分あり
+    KeepUserPrice: S05 現在価格を維持
+    AdoptCatalogPrice: S05 カタログ価格を採用
+
+    [*] --> Home: アプリ起動
+    Home --> CostReview: 支出レビューを表示
+    CostReview --> Home: 戻る
+    Home --> ServiceSelecting: 追加をタップ
+    Home --> SubscriptionDetail: 登録済みサブスクを選択
+
+    ServiceSelecting --> ServiceSearching: 検索入力
+    ServiceSearching --> ServiceSelecting: 検索クリア
+    ServiceSelecting --> PlanSelecting: 既知サービスを選択
+    ServiceSelecting --> ManualEditing: その他 / 未登録サービス
+
+    PlanSelecting --> InlinePlanEditor: プランを選択 / 下部に金額編集欄を表示
+    InlinePlanEditor --> InlinePriceEditing: 金額を編集
+    InlinePriceEditing --> InlinePlanEditor: 修正を反映
+    InlinePlanEditor --> BillingDateEditing: 次回請求日を入力
+    BillingDateEditing --> InlinePlanEditor: 入力完了
+    InlinePlanEditor --> Saved: このプランを設定
+    ManualEditing --> InlinePlanEditor: 必須項目を入力
+    Saved --> Home: 集計を更新
+
+    SubscriptionDetail --> InlinePriceEditing: 金額編集
+    SubscriptionDetail --> PlanSelecting: プラン変更
+    SubscriptionDetail --> Home: 戻る
+
+    InlinePriceEditing --> UserPriceOverridden: 手修正価格を保存
+    UserPriceOverridden --> SubscriptionDetail: 詳細へ戻る
+    UserPriceOverridden --> Home: 集計を更新
+
+    SubscriptionDetail --> CatalogPriceChanged: カタログ価格差分を検知
+    CatalogPriceChanged --> KeepUserPrice: 現在の金額を維持
+    CatalogPriceChanged --> AdoptCatalogPrice: カタログ価格を使用
+    KeepUserPrice --> SubscriptionDetail: effectivePrice は変更しない
+    AdoptCatalogPrice --> SubscriptionDetail: registeredPrice 更新 / override 解除
+
+    state InlinePlanEditor {
+        MonthlyPlan: S03 月額プラン
+        YearlyPlan: S03 年額プラン
+        MonthlyEquivalentReady: S03 月あたり計算済み
+        EditablePrice: S03 金額編集可能
+        MonthlyEquivalentPreview: S03 月あたりプレビュー
+        [*] --> MonthlyPlan
+        [*] --> YearlyPlan
+        MonthlyPlan --> MonthlyEquivalentReady: 月あたり = 月額
+        YearlyPlan --> MonthlyEquivalentReady: 月あたり = 年額 / 12
+        MonthlyEquivalentReady --> EditablePrice
+        EditablePrice --> MonthlyEquivalentPreview: 月あたりコストを表示
+        MonthlyEquivalentPreview --> [*]
+    }
+        </pre>
+      </div>
+      <div class="id-map">
+        <a class="id-chip" href="#s01"><strong>S01</strong>ホーム / Cost Review</a>
+        <a class="id-chip" href="#s02"><strong>S02</strong>サービス選択・検索</a>
+        <a class="id-chip" href="#s03"><strong>S03</strong>プラン選択・金額編集</a>
+        <a class="id-chip" href="#s05"><strong>S05</strong>サブスク詳細</a>
+        <a class="id-chip" href="#s07"><strong>S07</strong>レビュー</a>
+        <a class="id-chip" href="#s08"><strong>S08</strong>設定</a>
+      </div>
+    </section>
+
+    <section class="section" id="table">
+      <div class="section-head">
+        <h2>画面遷移表</h2>
+        <p class="note">画面IDはモックへリンクしています。</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>画面ID</th>
+              <th>画面名</th>
+              <th>目的</th>
+              <th>主な入口</th>
+              <th>主な表示内容</th>
+              <th>入力 / 編集項目</th>
+              <th>主な遷移先</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="#s01">S01</a></td>
+              <td><span class="screen-name">ホーム / Cost Review</span></td>
+              <td>今月のサブスク支出を把握し、見直し候補に気づく。</td>
+              <td><span class="tag">アプリ起動</span><span class="tag">Home</span></td>
+              <td>今月合計、年間換算、金額の大きい契約、見直し候補、近日更新。</td>
+              <td>なし。</td>
+              <td><a class="tag dark" href="#s02">S02</a><a class="tag dark" href="#s05">S05</a><a class="tag dark" href="#s07">S07</a></td>
+            </tr>
+            <tr>
+              <td><a href="#s02">S02</a></td>
+              <td><span class="screen-name">サブスク追加: サービス選択</span></td>
+              <td>既知サービスから登録対象を素早く選ぶ。</td>
+              <td><span class="tag">追加ボタン</span></td>
+              <td>検索欄、人気サービスのアイコン一覧、カテゴリ候補。</td>
+              <td>サービス検索キーワード。</td>
+              <td><a class="tag dark" href="#s03">S03</a></td>
+            </tr>
+            <tr>
+              <td><a href="#s03">S03</a></td>
+              <td><span class="screen-name">サブスク追加: プラン選択・金額編集</span></td>
+              <td>プラン選択後、同一画面下部で金額を確認・編集し、そのまま設定する。</td>
+              <td><a class="tag" href="#s02">S02でサービス選択</a></td>
+              <td>プラン名、金額、請求周期、月あたりコスト、価格確認日、下部の金額編集欄、設定ボタン。</td>
+              <td>プラン選択、金額、次回請求日、通知日数。</td>
+              <td><a class="tag dark" href="#s01">S01</a><a class="tag dark" href="#s05">S05</a></td>
+            </tr>
+            <tr>
+              <td><a href="#s05">S05</a></td>
+              <td><span class="screen-name">サブスク詳細</span></td>
+              <td>登録済みサブスクの状態確認と編集を行う。</td>
+              <td><a class="tag" href="#s01">ホームの契約行</a><a class="tag" href="#s07">レビューの契約行</a></td>
+              <td>現在の金額、月あたりコスト、次回請求日、請求周期、価格情報源、支払方法。</td>
+              <td>金額、プラン、カテゴリ、支払方法、通知設定、メモ。金額編集は詳細内のインライン編集で行う。</td>
+              <td><a class="tag dark" href="#s03">S03</a><a class="tag dark" href="#s01">S01</a></td>
+            </tr>
+            <tr>
+              <td><a href="#s07">S07</a></td>
+              <td><span class="screen-name">レビュー</span></td>
+              <td>無駄・重複・高額契約を見直す。</td>
+              <td><span class="tag">Review</span><a class="tag" href="#s01">見直し候補</a></td>
+              <td>カテゴリ重複、高額プラン、年間支出、削減候補、削減見込み額。</td>
+              <td>フィルタ、並び替え。</td>
+              <td><a class="tag dark" href="#s05">S05</a><a class="tag dark" href="#s01">S01</a></td>
+            </tr>
+            <tr>
+              <td><a href="#s08">S08</a></td>
+              <td><span class="screen-name">設定</span></td>
+              <td>アプリ全体の設定とデータ管理を行う。</td>
+              <td><span class="tag">Profile</span><span class="tag">Settings</span></td>
+              <td>通貨、通知初期値、カタログ更新日、バックアップ、エクスポート。</td>
+              <td>通貨、通知タイミング、バックアップ設定。</td>
+              <td><a class="tag dark" href="#s01">S01</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="rules">
+      <div class="section-head">
+        <h2>価格・表示ルール</h2>
+        <p class="note">合計・レビュー計算に使う価格の扱い。</p>
+      </div>
+      <div class="rules">
+        <article class="rule-card">
+          <h3>月額プラン</h3>
+          <p>金額と月あたりコストは同額。ホーム集計にはそのまま反映する。</p>
+          <span class="formula">月あたり = 月額</span>
+        </article>
+        <article class="rule-card">
+          <h3>年額プラン</h3>
+          <p>年額金額と月あたりコストを併記。ホームでは比較しやすい月あたりを優先表示。</p>
+          <span class="formula">月あたり = 年額 / 12</span>
+        </article>
+        <article class="rule-card">
+          <h3>週額プラン</h3>
+          <p>週額のままだと比較しづらいため、月あたりに換算してレビューへ反映する。</p>
+          <span class="formula">月あたり = 週額 × 52 / 12</span>
+        </article>
+        <article class="rule-card">
+          <h3>任意周期</h3>
+          <p>何日ごと、何か月ごとなどの間隔を保存し、周期入力後に月あたりコストを計算する。</p>
+        </article>
+        <article class="rule-card">
+          <h3>カタログ価格</h3>
+          <p>登録時の初期値として使う。カタログ更新後も、保存済み価格は自動変更しない。</p>
+        </article>
+        <article class="rule-card">
+          <h3>手修正価格</h3>
+          <p>ユーザーが修正した金額を effectivePrice として扱い、合計・レビュー計算に使う。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="mockups">
+      <div class="section-head">
+        <h2>画面モック</h2>
+        <p class="note">Cost Editorial方向で主要画面を統一。各カード右上から表へ戻れます。</p>
+      </div>
+      <div class="mock-grid">
+        <article class="phone-panel" id="s01">
+          <div class="mock-head">
+            <div><h3>S01 ホーム</h3><p>今月の支出レビュー</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">Cost Review</div><div class="small">May recurring spend</div></div><div class="icon-btn">+</div></div>
+            <div class="hero-number">18.4k</div>
+            <p class="caption">今月のサブスク支出。エンタメが全体の42%を占めています。</p>
+            <div class="insight"><strong>見直し候補: 2件</strong><p class="caption">重複カテゴリを整理すると年間 ¥23,760 削減できます。</p></div>
+            <div class="section-label">Largest commitments</div>
+            <div class="list">
+              <div class="item"><span class="marker"></span><div><div class="name">Adobe Cloud</div><div class="small">仕事 / 6月12日</div></div><div class="price">¥3,280</div></div>
+              <div class="item"><span class="marker rust"></span><div><div class="name">Netflix</div><div class="small">動画 / 6月2日</div></div><div class="price">¥1,590</div></div>
+              <div class="item"><span class="marker sage"></span><div><div class="name">iCloud 2TB</div><div class="small">クラウド / 6月20日</div></div><div class="price">¥1,500</div></div>
+            </div>
+            <div class="bottom-nav"><span>Home</span><span>Spend</span><span>Review</span><span>Me</span></div>
+          </div></div>
+        </article>
+
+        <article class="phone-panel" id="s02">
+          <div class="mock-head">
+            <div><h3>S02 サービス選択</h3><p>既知サービスから選択</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">サブスクを追加</div><div class="small">サービスを選択</div></div><div class="icon-btn">×</div></div>
+            <div class="search"><span>⌕</span><span>Netflix、Spotify、Adobe...</span></div>
+            <div class="section-label">よく使われるサービス</div>
+            <div class="service-grid">
+              <div class="service active"><span class="brand red">N</span><span>Netflix</span></div>
+              <div class="service"><span class="brand green">S</span><span>Spotify</span></div>
+              <div class="service"><span class="brand blue">D+</span><span>Disney+</span></div>
+              <div class="service"><span class="brand">YT</span><span>YouTube</span></div>
+              <div class="service"><span class="brand">AD</span><span>Adobe</span></div>
+              <div class="service"><span class="brand blue">iC</span><span>iCloud</span></div>
+              <div class="service"><span class="brand pink">CA</span><span>Canva</span></div>
+              <div class="service"><span class="brand">+</span><span>その他</span></div>
+            </div>
+            <div class="primary">Netflix のプランへ</div>
+          </div></div>
+        </article>
+
+        <article class="phone-panel" id="s03">
+          <div class="mock-head">
+            <div><h3>S03 プラン選択</h3><p>下部で金額編集して設定</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">Netflix</div><div class="small">価格確認日: 2026/05/31</div></div><div class="icon-btn">←</div></div>
+            <div class="section-label">プラン</div>
+            <div class="list">
+              <div class="plan"><div><div class="name">広告つきスタンダード</div><div class="small">月額 / 動画</div></div><div><div class="price">¥890</div><div class="monthly">月 ¥890</div></div></div>
+              <div class="plan active"><div><div class="name">スタンダード</div><div class="small">月額 / 動画</div></div><div><div class="price">¥1,590</div><div class="monthly">月 ¥1,590</div></div></div>
+              <div class="plan"><div><div class="name">プレミアム 年額</div><div class="small">年額 / 動画</div></div><div><div class="price">¥22,900</div><div class="monthly">月 ¥1,908</div></div></div>
+            </div>
+            <div class="summary-card">
+              <div class="row"><span>選択中</span><strong>スタンダード</strong></div>
+              <div class="row"><span>金額編集</span><strong><span class="input-like">¥1,590</span></strong></div>
+              <p class="field-comment">選択したプランの標準価格を初期表示。実際の請求額が違う場合だけ修正します。</p>
+              <div class="row"><span>月あたり</span><strong>¥1,590</strong></div>
+              <div class="row"><span>次回請求</span><strong>2026/06/02</strong></div>
+            </div>
+            <div class="primary">このプランを設定する</div>
+          </div></div>
+        </article>
+
+        <article class="phone-panel" id="s05">
+          <div class="mock-head">
+            <div><h3>S05 サブスク詳細</h3><p>価格情報源も表示</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">Netflix</div><div class="small">動画・エンタメ</div></div><div class="icon-btn">⋯</div></div>
+            <div class="hero-number">1,590</div>
+            <p class="caption">月額 / 月あたり ¥1,590 / 次回請求 6月2日</p>
+            <div class="insight"><strong>カタログ価格が変更された可能性</strong><p class="caption">現在の登録価格を維持するか、カタログ価格を採用できます。</p></div>
+            <div class="list" style="margin-top:12px">
+              <div class="setting-row"><div><div class="name">価格情報源</div><div class="small">ユーザー修正なし</div></div><span class="tag">詳細</span></div>
+              <div class="setting-row"><div><div class="name">支払方法</div><div class="small">Visa ending 2431</div></div><span class="tag">編集</span></div>
+            </div>
+            <div class="edit-card">
+              <div class="row"><span>カタログ価格</span><strong>¥1,590 / 月</strong></div>
+              <div class="row"><span>登録価格</span><strong><span class="input-like">¥1,790</span></strong></div>
+              <div class="row"><span>請求周期</span><strong>月額</strong></div>
+              <div class="row"><span>月あたり</span><strong>¥1,790</strong></div>
+            </div>
+            <div class="section-label">反映方法</div>
+            <div class="setting-row"><div><div class="name">現在の金額を維持</div><div class="small">effectivePrice に使用</div></div><span class="tag dark">選択中</span></div>
+            <div class="setting-row"><div><div class="name">カタログ価格を使用</div><div class="small">override を解除</div></div><span class="tag">選択</span></div>
+            <div class="primary">詳細を更新</div>
+          </div></div>
+        </article>
+
+        <article class="phone-panel" id="s07">
+          <div class="mock-head">
+            <div><h3>S07 レビュー</h3><p>無駄・重複の発見</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">Review</div><div class="small">Savings candidates</div></div><div class="icon-btn">≡</div></div>
+            <div class="chart"><span></span><span></span><span></span></div>
+            <p class="caption">エンタメカテゴリに重複があります。1件停止で年間 ¥23,760 削減見込み。</p>
+            <div class="section-label">見直し候補</div>
+            <div class="list">
+              <div class="item"><span class="marker rust"></span><div><div class="name">Netflix</div><div class="small">動画カテゴリ重複</div></div><div class="price">¥1,590</div></div>
+              <div class="item"><span class="marker"></span><div><div class="name">YouTube Premium</div><div class="small">動画カテゴリ重複</div></div><div class="price">¥1,280</div></div>
+            </div>
+            <div class="bottom-nav"><span>Home</span><span>Spend</span><span>Review</span><span>Me</span></div>
+          </div></div>
+        </article>
+
+        <article class="phone-panel" id="s08">
+          <div class="mock-head">
+            <div><h3>S08 設定</h3><p>通知・通貨・バックアップ</p></div>
+            <a class="jump" href="#table">表へ</a>
+          </div>
+          <div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span class="signal"><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>
+            <div class="topline"><div><div class="screen-title">Settings</div><div class="small">App preferences</div></div><div class="icon-btn">←</div></div>
+            <div class="list" style="margin-top:16px">
+              <div class="setting-row"><div><div class="name">通貨</div><div class="small">日本円</div></div><span class="tag">JPY</span></div>
+              <div class="setting-row"><div><div class="name">通知初期値</div><div class="small">請求日の3日前</div></div><span class="tag">編集</span></div>
+              <div class="setting-row"><div><div class="name">カタログ更新日</div><div class="small">2026/05/31</div></div><span class="tag">確認</span></div>
+              <div class="setting-row"><div><div class="name">バックアップ</div><div class="small">端末内エクスポート</div></div><span class="tag">実行</span></div>
+            </div>
+            <div class="bottom-nav"><span>Home</span><span>Spend</span><span>Review</span><span>Me</span></div>
+          </div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="implementation">
+      <div class="section-head">
+        <h2>実装前タスク</h2>
+        <p class="note">Android実装に入る前に決めることと、環境構築の最短手順。</p>
+      </div>
+      <div class="task-grid">
+        <article class="task-card">
+          <h3>MVP範囲</h3>
+          <ul>
+            <li>初期実装は S01 / S02 / S03 / S05 / S07 / S08 に絞る。</li>
+            <li>S03でプラン選択、金額編集、設定完了まで行う。</li>
+            <li>銀行連携、Gmail解析、共有機能は後回しにする。</li>
+          </ul>
+        </article>
+        <article class="task-card">
+          <h3>データ設計</h3>
+          <ul>
+            <li>既知サービスカタログとユーザー登録データを分ける。</li>
+            <li>カタログ価格は初期値、手修正価格を実支出として扱う。</li>
+            <li>年額・週額・任意周期は月あたりコストを計算する。</li>
+          </ul>
+        </article>
+        <article class="task-card">
+          <h3>Android技術スタック</h3>
+          <ul>
+            <li>Kotlin + Jetpack Compose。</li>
+            <li>Navigation Composeで画面遷移を管理。</li>
+            <li>Roomでローカル保存。</li>
+            <li>通知はWorkManagerまたはAlarmManagerで検討。</li>
+          </ul>
+        </article>
+        <article class="task-card">
+          <h3>環境構築</h3>
+          <ul>
+            <li>Android Studio安定版をインストール。</li>
+            <li>初回起動でAndroid SDK / Platform Toolsを導入。</li>
+            <li>導入後、ターミナルを開き直してadbを確認。</li>
+          </ul>
+          <code class="command">C:\LLM\codex\sample\setup-android-env.cmd</code>
+        </article>
+        <article class="task-card">
+          <h3>Codex CLIで自動化する作業</h3>
+          <ul>
+            <li>Composeプロジェクト作成。</li>
+            <li>画面雛形とNavigation構成の作成。</li>
+            <li>Room Entity / DAO / Repositoryの作成。</li>
+            <li>初期サービスカタログJSONの作成。</li>
+          </ul>
+          <code class="command">codex "app-design.html に沿ってAndroid Composeプロジェクトの雛形を作成してください"</code>
+        </article>
+        <article class="task-card">
+          <h3>次の実装順</h3>
+          <ul>
+            <li>プロジェクト生成。</li>
+            <li>テーマとS01〜S08の画面雛形。</li>
+            <li>S02〜S03のサービス選択・プラン選択フロー。</li>
+            <li>Room保存とホーム集計。</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        background: "#f8f3ea",
+        primaryColor: "#252127",
+        primaryTextColor: "#f8f3ea",
+        primaryBorderColor: "#252127",
+        lineColor: "#9a7158",
+        secondaryColor: "#efe7da",
+        secondaryTextColor: "#171417",
+        tertiaryColor: "#607a73",
+        tertiaryTextColor: "#f8f3ea",
+        edgeLabelBackground: "#fffaf0",
+        labelTextColor: "#171417",
+        textColor: "#171417",
+        fontFamily: "Inter, Noto Sans JP, Yu Gothic UI, sans-serif"
+      }
+    });
+  </script>
+</body>
+</html>
